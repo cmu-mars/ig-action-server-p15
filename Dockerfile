@@ -1,4 +1,4 @@
-FROM mars
+FROM cmu-mars/base
 
 # add the source code for the shared "notifications" module
 RUN git clone https://github.com/cmu-mars/notifications-p15 \
@@ -14,14 +14,14 @@ RUN cd /tmp && \
     sudo rm /tmp/* -rf
 
 # install the ROS navigation stack (from source)
-ENV ROS_NAVIGATION_VERSION 1.15.0
-RUN wget -q "https://github.com/ros-planning/navigation/archive/${ROS_NAVIGATION_VERSION}.tar.gz" && \
-    tar -xvf "${ROS_NAVIGATION_VERSION}.tar.gz" && \
-    rm "${ROS_NAVIGATION_VERSION}.tar.gz" && \
-    mv "navigation-${ROS_NAVIGATION_VERSION}" navigation && \
-    rm navigation/.gitignore navigation/README.md navigation/.travis.yml && \
-    mv navigation/* src && \
-    rm -rf navigation
+ENV ROS_NAVIGATION_MSGS_VERSION 1.13.0
+RUN wget -q "https://github.com/ros-planning/navigation_msgs/archive/${ROS_NAVIGATION_MSGS_VERSION}.tar.gz" && \
+    tar -xvf "${ROS_NAVIGATION_MSGS_VERSION}.tar.gz" && \
+    rm "${ROS_NAVIGATION_MSGS_VERSION}.tar.gz" && \
+    mv "navigation_msgs-${ROS_NAVIGATION_MSGS_VERSION}" navigation_msgs && \
+    rm navigation_msgs/README.md && \
+    mv navigation_msgs/* src && \
+    rm -rf navigation_msgs
 
 # add the source code for this module
 ADD ig_action_client src/ig_action_client
