@@ -1,0 +1,3 @@
+<launch>
+  <node name="brasscomms" pkg="brasscomms" type="brasscomms.py" output="screen"></node>
+</launch>
