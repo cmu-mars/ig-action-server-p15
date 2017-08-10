@@ -28,12 +28,14 @@ ADD ig_action_client src/ig_action_client
 ADD ig_action_msgs src/ig_action_msgs
 ADD ig_action_server src/ig_action_server
 
+RUN rosdep update && \
+    rosdep install -y --from-paths . --ignore-src --rosdistro=kinetic
+
 RUN . /opt/ros/kinetic/setup.sh && \
     sudo chown -R $(whoami):$(whoami) . && \
     catkin_make install
 
 RUN . /opt/ros/kinetic/setup.sh && \
     . devel/setup.sh && \
-    rosdep update && \
     rospack depends1 ig_action_server && \
     rospack depends1 ig_action_client
