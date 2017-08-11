@@ -40,5 +40,4 @@ RUN . /opt/ros/kinetic/setup.sh && \
     rospack depends1 ig_action_server && \
     rospack depends1 ig_action_client
 
-ADD entrypoint.sh entrypoint.sh
-ENTRYPOINT ./entrypoint.sh
+CMD ["roscd ig_action_server/src && python ig_server.py"]
