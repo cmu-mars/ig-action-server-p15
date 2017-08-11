@@ -39,3 +39,6 @@ RUN . /opt/ros/kinetic/setup.sh && \
     . devel/setup.sh && \
     rospack depends1 ig_action_server && \
     rospack depends1 ig_action_client
+
+ADD entrypoint.sh entrypoint.sh
+ENTRYPOINT entrypoint.sh
