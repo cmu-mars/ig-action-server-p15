@@ -109,6 +109,10 @@ def p_action(t):
             | SETLOCALIZATIONFIDELITY LPAR NUM RPAR
             | MOVEABSH LPAR NUM COMMA NUM COMMA NUM COMMA NUM RPAR
             | DEADLINE LPAR NUM RPAR
+            | SETSENSOR LPAR STRING COMMA STRING RPAR
+            | STARTNODES LPAR STRING RPAR
+            | KILLNODES LPAR STRING RPAR
+            | SETCP1CONFIG LPAR STRING RPAR
             """
   if t[1] == "Move":
     t[0] = Action(MOVE, (t[3], t[5], t[7], t[9], t[11]))
@@ -136,6 +140,14 @@ def p_action(t):
     t[0] = Action(MOVEABSH, (t[3], t[5], t[7], t[9]))
   elif t[1] == "Deadline":
     t[0] = Action(DEADLINE, (t[3],))
+  elif t[1] == "SetSensor":
+    t[0] = Action(SETSENSOR, (t[3],t[5]))
+  elif t[1] == "StartNodes":
+    t[0] = Action(STARTNODES, (t[3],))
+  elif t[1] == "KillNodes":
+    t[0] = Action(KILLNODES, (t[3],))
+  elif t[1] == "SETCP1CONFIG":
+    t[0] = Action(SETCP1CONFIG, (t[3],))
   else:
     t[0] = Action(SAY, (t[3],))
 

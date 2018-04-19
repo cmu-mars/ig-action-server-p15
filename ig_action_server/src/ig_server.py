@@ -27,6 +27,16 @@ import time
 import tf
 import publisher
 
+try:
+	import cp1_instructions as cp1
+except:
+	pass
+
+try:
+	import cp3_instructions as cp3
+except:
+	pass
+
 lexer = lex.lex(module=lexerIG)
 parser = yacc.yacc(module=parserIG)
 
@@ -285,6 +295,50 @@ class IGServer(object):
 			self._notify_user.publish(un)
 			rospy.sleep(2)
 			return True
+		elif action.operator == SETSENSOR:
+			sensor, enablement = action.params
+			if self.cp3_i is None:
+				self.cp3 = cp3.CP3_Instructions()
+			status, msg = self.cp3.set_sensor(sensor, enablement)
+			if status:
+				self.publish_feedback("%s:SetSensor(%s,%s): SUCCESS" %(node,sensor, enablement))
+				return True
+			else:
+				self.publish_feedback("%s:SetSensor(%s,%s): FAILED: %s" %(node,sensor, enablement, msg))
+				return False
+		elif action.operator == STARTNODES:
+			nodes, = action.params
+			if self.cp3 is None:
+				self.cp3 = cp3.CP3_Instructions()
+			status, msg = self.cp3.start_nodes(nodes)
+			if status:
+				self.publish_feedback("%s:StartNodes(%s): SUCCESS" %(node,nodes))
+				return True
+			else:
+				self.publish_feedback("%s:StartNodes(%s,%s): FAILED: %s" %(node,nodes, msg))
+				return False
+		elif action.operator == KILLNODES:
+			nodes, = action.params
+			if self.cp3 is None:
+				self.cp3 = cp3.CP3_Instructions()
+			status, msg = self.cp3.kill_nodes(nodes)
+			if status:
+				self.publish_feedback("%s:KillNodes(%s): SUCCESS" %(node,nodes))
+				return True
+			else:
+				self.publish_feedback("%s:KillNodes(%s,%s): FAILED: %s" %(node,nodes, msg))
+				return False
+		elif action.operator == SETCP1CONFIG:
+			config, = action.params
+			if self.cp1 is None:
+				self.cp1 = cp1.CP1_Instructions()
+			status, msg = self.cp1.set_config(config)
+			if status:
+				self.publish_feedback("%s:SetCP1Config(%s): SUCCESS" %(node,config))
+				return True
+			else:
+				self.publish_feedback("%s:SetCP1Config(%s,%s): FAILED: %s" %(node,config, msg))
+				return False
 		else:
 			self.publish_feedback("Runtime Error: Unsupported action!");
 			self._success = False

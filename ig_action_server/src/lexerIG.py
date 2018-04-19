@@ -33,7 +33,11 @@ tokens = [
   "RECALIBRATE",
   "SETLOCALIZATIONFIDELITY",
   "MOVEABSH",
-  "DEADLINE"
+  "DEADLINE",
+  "SETSENSOR",
+  "SETCP1CONFIG",
+  "STARTNODES",
+  "KILLNODES"
 ]
 
 # simple tokens
@@ -67,6 +71,10 @@ t_RECALIBRATE = r"Recalibrate"
 t_SETLOCALIZATIONFIDELITY = r"SetLocalizationFidelity"
 t_MOVEABSH = r"MoveAbsH"
 t_DEADLINE = r"Deadline"
+t_SETSENSOR = r"SetSensor"
+t_SETCP1CONFIG = r"SetCP1Config"
+t_STARTNODES = r"StartNodes"
+t_KILLNODES = r"KillNodes"
 
 # more complex tokens
 
