@@ -13,7 +13,7 @@ class CP3_Instructions(object):
                   "amcl" : "cp3-amcl.launch",
                   "mrpt" : "cp3-mrpt.launch"}
 
-    SENSORS = ["kinect", "lidar", "cameras", "headlamp"]
+    SENSORS = ["kinect", "lidar", "cameras", "camera", "headlamp"]
 
     launched = None
 
@@ -35,7 +35,7 @@ class CP3_Instructions(object):
         self.launched = None
         config_id = config_id.lower()
         if config_id not in self.NODE_MAP.keys():
-            return False, "Illegal config passed in: %s" %config_id 
+            return True, "Illegal config passed in: %s" %config_id 
         nodes = self.NODE_MAP[config_id]
 
         if nodes is None or len(nodes) == 0:
@@ -89,6 +89,7 @@ class CP3_Instructions(object):
 
     def set_sensor(self, sensor, enablement):
         sensor = sensor.lower()
+
         if not sensor in self.SENSORS:
             return False, "Unknown sensor: %s" %sensor
         if not isinstance(enablement, bool):
@@ -106,7 +107,7 @@ class CP3_Instructions(object):
         elif sensor == "lidar":
             set_lidar_srv = rospy.ServiceProxy('/mobile_base/lidar/mode', SetLidarMode)
             result = set_lidar_srv(enablement)
-        elif sensor == "cameras":
+        elif sensor == "cameras" or sensor=="camera":
             set_kinect_srv = rospy.ServiceProxy('/mobile_base/kinect/mode', SetKinectMode)
             result = set_kinect_srv(2 if enablement else 0)
         elif sensor == "headlamp":

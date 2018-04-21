@@ -58,6 +58,8 @@ class IGServer(object):
 	_init_time = None
 	_tf = None
 	_canceled = None
+	cp3 = None
+	cp1 = None
 
 	def __init__(self, name):
 		self._name = name
@@ -297,7 +299,7 @@ class IGServer(object):
 			return True
 		elif action.operator == SETSENSOR:
 			sensor, enablement = action.params
-			if self.cp3_i is None:
+			if self.cp3 is None:
 				self.cp3 = cp3.CP3_Instructions()
 			status, msg = self.cp3.set_sensor(sensor, enablement)
 			if status:

@@ -84,8 +84,8 @@ def t_NUM(t):
   return t
 
 def t_STRING(t):
-  r'".*"'
-  t.value = eval(t.value)
+  r'%[^%]*%'
+  t.value = eval(t.value.replace('%','"'))
   return t
 
 # ignore whitespace
