@@ -20,7 +20,7 @@ class CP3_Instructions(object):
     def __init__(self):
         self.launched = None
 
-    def kill_launch(cmd):
+    def kill_launch(self, cmd):
         for proc in psutil.process_iter():
             s = [str(item) for item in proc.cmdline()]
             j = " ".join(s)
@@ -31,7 +31,7 @@ class CP3_Instructions(object):
     def kill_nodes(self,config_id):
 
         if self.launched is not None:
-            kill_launch(self.launched)
+            self.kill_launch(self.launched)
         self.launched = None
         config_id = config_id.lower()
         if config_id not in self.NODE_MAP.keys():
