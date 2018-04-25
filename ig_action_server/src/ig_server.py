@@ -243,19 +243,19 @@ class IGServer(object):
 			else:
 				self.publish_feedback("%s:TurnRel(%s,%s): FAILED: %s" %(node,a,r,msg))
 				return False
-		elif action.operator == CHARGE:
-			secs, = action.params
-			self.publish_feedback("%s:Charge(%s): START" %(node, secs))
-			status,msg = turtlebot.charge(secs, self._canceled)
-			if self._canceled.is_canceled():
-				self.publish_feedback("%s:Charge(%s): CANCELED" %(node, secs))
-				return False
-			if status:
-				self.publish_feedback("%s:Charge(%s): SUCCESS" %(node, secs))
-				return True
-			else:
-				self.publish_feedback("%s:Charge(%s): FAILED: %s" %(node, secs, msg))
-				return False
+		# elif action.operator == CHARGE:
+		# 	secs, = action.params
+		# 	self.publish_feedback("%s:Charge(%s): START" %(node, secs))
+		# 	status,msg = turtlebot.charge(secs, self._canceled)
+		# 	if self._canceled.is_canceled():
+		# 		self.publish_feedback("%s:Charge(%s): CANCELED" %(node, secs))
+		# 		return False
+		# 	if status:
+		# 		self.publish_feedback("%s:Charge(%s): SUCCESS" %(node, secs))
+		# 		return True
+		# 	else:
+		# 		self.publish_feedback("%s:Charge(%s): FAILED: %s" %(node, secs, msg))
+		# 		return False
 		elif action.operator == RECALIBRATE:
 			mode, = action.params
 			self.publish_feedback("%s:Recalibrate(%s): START" %(node, mode))
