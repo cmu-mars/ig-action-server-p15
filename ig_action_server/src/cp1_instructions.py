@@ -14,6 +14,7 @@ class CP1_Instructions(object):
         self.set_charging_srv = rospy.ServiceProxy(self.ros_node + self.model_name + '/set_charging', SetCharging)
 
     def set_config(self, config_id):
+        print("Setting configuration to " + config_id)
         res = self.set_configuration_srv(config_id)
         if res:
             return True, "the new configuration has been set"
@@ -35,6 +36,6 @@ class CP1_Instructions(object):
 
     def charge(self, seconds):
         self.dock()
-        rospy.Duration.from_sec(seconds)
+        rospy.sleep(rospy.Duration.from_sec(seconds))
         self.undock()
         return True, "Charging is done"
