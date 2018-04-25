@@ -112,7 +112,7 @@ def p_action(t):
             | SETSENSOR LPAR STRING COMMA STRING RPAR
             | STARTNODES LPAR STRING RPAR
             | KILLNODES LPAR STRING RPAR
-            | SETCP1CONFIG LPAR STRING RPAR
+            | SETCP1CONFIG LPAR NUM RPAR
             """
   if t[1] == "Move":
     t[0] = Action(MOVE, (t[3], t[5], t[7], t[9], t[11]))
