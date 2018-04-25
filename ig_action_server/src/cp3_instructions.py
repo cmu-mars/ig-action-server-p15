@@ -30,12 +30,14 @@ class CP3_Instructions(object):
 
     def kill_nodes(self,config_id):
 
-        if self.launched is not None:
-            self.kill_launch(self.launched)
-        self.launched = None
+        
         config_id = config_id.lower()
         if config_id not in self.NODE_MAP.keys():
             return True, "Illegal config passed in: %s" %config_id 
+
+        if self.launched is not None:
+            self.kill_launch(self.launched)
+        self.launched = None
         nodes = self.NODE_MAP[config_id]
 
         if nodes is None or len(nodes) == 0:
