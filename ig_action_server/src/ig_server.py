@@ -341,6 +341,22 @@ class IGServer(object):
 			else:
 				self.publish_feedback("%s:SetCP1Config(%s,%s): FAILED: %s" %(node,config, msg))
 				return False
+		# 	TODO: a new constant needs to be defined here
+		elif action.operator == CHARGE:
+			secs, = action.params
+			self.publish_feedback("%s:Charge(%s): START" % (node, secs))
+			if self.cp1 is None:
+				self.cp1 = cp1.CP1_Instructions()
+			status, msg = self.cp1.charge(seconds=secs)
+			if self._canceled.is_canceled():
+				self.publish_feedback("%s:Charge(%s): CANCELED" % (node, secs))
+				return False
+			if status:
+				self.publish_feedback("%s:Charge(%s): SUCCESS" % (node, secs))
+				return True
+			else:
+				self.publish_feedback("%s:Charge(%s): FAILED: %s" % (node, secs, msg))
+				return False
 		else:
 			self.publish_feedback("Runtime Error: Unsupported action!");
 			self._success = False
