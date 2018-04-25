@@ -24,7 +24,7 @@ class CP1_Instructions(object):
     def set_charging(self, charging):
         return self.set_charging_srv(charging)
 
-    def dock(self):
+    def dock(self, seconds):
         rospy.loginfo("The bot is docked and start charging for {0} seconds".format(seconds))
         self.set_charging(1)
         return True
@@ -35,7 +35,7 @@ class CP1_Instructions(object):
         return True
 
     def charge(self, seconds):
-        self.dock()
+        self.dock(seconds)
         rospy.sleep(rospy.Duration.from_sec(seconds))
         self.undock()
         return True, "Charging is done"
