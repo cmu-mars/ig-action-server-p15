@@ -81,12 +81,14 @@ class IGServer(object):
 
 	def preempt_cb(self):
 		rospy.loginfo('Server preempted')
+		print("Canceling current instructions")
 		self._canceled.cancel()
 		publisher.move_base_action_client().cancel_all_goals()
 
 	def execute_cb(self, goal):
 		# Setting the rate of execution.
 		if not self._canceled is None and not self._canceled.is_canceled():
+			print("Should cancel a goal first")
 			rospy.loginfo('Received a set of instructions without canceling the previous ones')
 			return
 		r =rospy.Rate(1)
@@ -347,7 +349,8 @@ class IGServer(object):
 			self.publish_feedback("%s:Charge(%s): START" % (node, secs))
 			if self.cp1 is None:
 				self.cp1 = cp1.CP1_Instructions()
-			status, msg = self.cp1.charge(seconds=secs)
+			self.cp1.track_battery_charge()
+			status, msg = self.cp1.charge()
 			if self._canceled.is_canceled():
 				self.publish_feedback("%s:Charge(%s): CANCELED" % (node, secs))
 				return False
@@ -365,13 +368,13 @@ class IGServer(object):
 		# we currently only support checking for visible objects and if an object is
 		# nearby
 		if cond.operator == VISIBLE:
-			print "Checking if %s is visible..." %cond.params[0]
-			print "Is %s visible?" %cond.params[0]
+			print( "Checking if %s is visible..." %cond.params[0])
+			print( "Is %s visible?" %cond.params[0])
 			ans = raw_input()
 			return ans in ("yes", "y", "", "\n")
-		elif cond.operatopr == STOP:
-			print "Checking if %s is within %s distance..." %(cond.params[1], cond.params[0])
-			print "Is %s within %s distance?" %(cond.params[1], cond.params[0])
+		elif cond.operator == STOP:
+			print( "Checking if %s is within %s distance..." %(cond.params[1], cond.params[0]))
+			print( "Is %s within %s distance?" %(cond.params[1], cond.params[0]))
 			ans = raw_input()
 			return ans in ("yes", "y", "", "\n")
 
@@ -423,14 +426,15 @@ class IGServer(object):
 			  config = config2
 			  break;
 			if status == WAITING:
-			  print "Robot is waiting for input! But this shouldn't happen in this simulation! What's going on?"
+			  print("Robot is waiting for input! But this shouldn't happen in this simulation! What's going on?")
 			  break
 			elif status == TERMINATED:
-			  print "Finished!"
+			  print( "Finished!")
 			  self.publish_feedback("Finished!");
 			  break
 			elif status == FAIL:
-			  print "Failed!"
+			  print( "Failed!")
+			  print("Here") 
 			  self.publish_feedback("Terminating because of failure")
 			  break
 			else:
