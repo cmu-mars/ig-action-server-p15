@@ -7,11 +7,13 @@ from brass_gazebo_plugins.srv import *
 class CP3_Instructions(object):
     NODE_MAP = {"aruco" : ["aruco_marker_publisher_front", "aruco_marker_publisher_back", "marker_manager", "marker_pose_publisher"],
                 "amcl" : ["amcl"],
-                "mrpt" : ["mrpt_localization_node"]}
+                "mrpt" : ["mrpt_localization_node"],
+                "laserscanNodelet" : ["laserscan_nodelet_manager"]}
 
     LAUNCH_MAP = {"aruco" : "cp3-aruco.launch",
                   "amcl" : "cp3-amcl.launch",
-                  "mrpt" : "cp3-mrpt.launch"}
+                  "mrpt" : "cp3-mrpt.launch",
+                  "laserscanNodelet" : "cp3-kinect.launch"}
 
     SENSORS = ["kinect", "lidar", "cameras", "camera", "headlamp"]
 
