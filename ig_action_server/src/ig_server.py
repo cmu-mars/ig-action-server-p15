@@ -14,6 +14,7 @@ import ply.yacc as yacc
 import parserIG
 import statics
 
+import os
 import sys
 
 from constants import *
@@ -37,8 +38,30 @@ try:
 except:
 	pass
 
+from watchdog.observers import Observer
+from watchdog.events import PatternMatchingEventHandler
+
+
 lexer = lex.lex(module=lexerIG)
 parser = yacc.yacc(module=parserIG)
+
+class IGHandler(PatternMatchingEventHandler):
+	patterns=["*.ig"]
+
+	def __init__(self, igserver):
+		self.igs = igserver
+		super(IGHandler, self).__init__()
+
+	def process(self, event):
+		rospy.loginfo("Got a new file with instructions: %s" %event.src_path)
+		if event.event_type == "modified" or event.event_type == "created":
+			self.igs.execute_from_file(event.src_path)
+
+	def on_modified(self, event):
+		self.process(event)
+
+	def on_created(self, event):
+		self.process(event)
 
 
 class CancelTracker(object):
@@ -71,6 +94,7 @@ class IGServer(object):
 		self._notify_user = rospy.Publisher("/notify_user", UserNotification, queue_size=1)
 
 
+
 #		rospy.Subscriber("euler_orientation", euler, self.euler_callback)
 #		rospy.sleep(10)
 		
@@ -86,6 +110,21 @@ class IGServer(object):
 		publisher.move_base_action_client().cancel_all_goals()
 
 	def execute_cb(self, goal):
+		self.execute_instructions(goal.order)
+
+	def execute_from_file(self, igfile):
+		if self._canceled is not None:
+			self._canceled.cancel()
+			publisher.move_base_action_client().cancel_all_goals()
+
+		with open(igfile, 'r') as f:
+			instructions=f.read()
+
+		self.execute_instructions(instructions)
+
+
+
+	def execute_instructions(self, instructions):
 		# Setting the rate of execution.
 		if not self._canceled is None and not self._canceled.is_canceled():
 			print("Should cancel a goal first")
@@ -97,13 +136,13 @@ class IGServer(object):
 		
 		# Appending the feedback for goal recieved.
 		self.publish_feedback('Recieved new goal!')
-		rospy.loginfo('BRASS | IG | Recieved a new goal: %s' % (goal.order))
+		rospy.loginfo('BRASS | IG | Recieved a new goal: %s' % (instructions))
 
 		# start core code
 		self.publish_feedback('Parsing goal')
 		rospy.loginfo('Parsing goal')
 		try:
-			ast = parser.parse(goal.order)
+			ast = parser.parse(instructions)
 		except Exception, e:
 			self._success = False
 			print e
@@ -113,7 +152,7 @@ class IGServer(object):
 		else:
 			self.publish_feedback('Validating instructions')
 			assert(statics.valid(ast))
-			self.publish_feedback('Received new valid IG: %s' %(goal.order))
+			self.publish_feedback('Received new valid IG: %s' %(instructions))
 			self.publish_feedback('Executing graph')
 			rospy.loginfo('Executing the graph')
 			if self._canceled.is_canceled():
@@ -446,6 +485,18 @@ class IGServer(object):
 if __name__ == "__main__":
 	rospy.init_node('ig_action_server')
 	igserver = IGServer('ig_action_server')
+
+	args = sys.argv[1:]
+	if args:
+		observer = Observer()
+		observer.schedule(IGHandler(igserver), path=os.path.expanduser(args[0]))
+		observer.start()
+
+		def shutdown_hook():
+			observer.stop()
+			observer.join()
+
+		rospy.on_shutdown(shutdown_hook)
 	rospy.spin()
 
 
