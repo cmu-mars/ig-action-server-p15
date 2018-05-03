@@ -53,8 +53,9 @@ class IGHandler(PatternMatchingEventHandler):
 		super(IGHandler, self).__init__()
 
 	def process(self, event):
-		rospy.loginfo("Got a new file with instructions: %s" %event.src_path)
-		if event.event_type == "modified" or event.event_type == "created":
+		if event.event_type == "modified":
+
+			rospy.loginfo("Got a new file with instructions: %s (%s)" %(event.src_path, event.event_type))
 			self.igs.execute_from_file(event.src_path)
 
 	def on_modified(self, event):
@@ -68,12 +69,15 @@ class CancelTracker(object):
 
 	def __init__(self):
 		self._canceled = False
+		self.lock = threading.Lock()
 
 	def is_canceled(self):
-		return self._canceled
+		with self.lock:
+			return self._canceled
 
 	def cancel(self):
-		self._canceled = True
+		with self.lock:
+			self._canceled = True
 
 class IGServer(object):
 	_feedback = ig_action_msgs.msg.InstructionGraphFeedback()
@@ -119,7 +123,9 @@ class IGServer(object):
 
 		with open(igfile, 'r') as f:
 			instructions=f.read()
-
+		while self._canceled is not None:
+			rospy.loginfo("Waiting for old instructions to be canceled")
+			time.sleep(1)
 		self.execute_instructions(instructions)
 
 
@@ -170,6 +176,7 @@ class IGServer(object):
 		elif self._success:
 			self.publish_result('Execution for goal completed successfully')
 			rospy.loginfo('BRASS | IG | Goal completed successfully')
+			self._canceled = None
 		else:
 			self.publish_result('Execution for goal failed')
 			rospy.loginfo('BRASS | IG | Goal failed')
@@ -488,8 +495,39 @@ if __name__ == "__main__":
 
 	args = sys.argv[1:]
 	if args:
+
+
+		igfile = None
+		lock = threading.Lock()
+
+		class XXX:
+			def __init__(self):
+				return
+
+			def execute_from_file(self, ig): 
+				global igfile
+				with lock:
+					igfile = ig
+
+		def new_action_run():
+			while not rospy.is_shutdown():
+				global igfile
+				ig = None
+				with lock:
+					if igfile is not None:
+						ig = igfile
+						igfile = None
+
+				if ig is not None:
+					igserver.execute_from_file(ig)
+				else:
+					rospy.sleep(1)
+
+		filewatcher = threading.Thread(target=new_action_run)
+		filewatcher.start()  
+
 		observer = Observer()
-		observer.schedule(IGHandler(igserver), path=os.path.expanduser(args[0]))
+		observer.schedule(IGHandler(XXX()), path=os.path.expanduser(args[0]))
 		observer.start()
 
 		def shutdown_hook():
