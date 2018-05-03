@@ -114,6 +114,7 @@ class IGServer(object):
 		publisher.move_base_action_client().cancel_all_goals()
 
 	def execute_cb(self, goal):
+		self.wait_for_cancel_to_finish()
 		self.execute_instructions(goal.order)
 
 	def execute_from_file(self, igfile):
@@ -123,11 +124,13 @@ class IGServer(object):
 
 		with open(igfile, 'r') as f:
 			instructions=f.read()
+		self.wait_for_cancel_to_finish()
+		self.execute_instructions(instructions)
+
+	def wait_for_cancel_to_finish(self):
 		while self._canceled is not None:
 			rospy.loginfo("Waiting for old instructions to be canceled")
 			time.sleep(1)
-		self.execute_instructions(instructions)
-
 
 
 	def execute_instructions(self, instructions):
