@@ -35,7 +35,7 @@ class CP3_Instructions(object):
 
 
     def kill_nodes(self,config_id):
-
+        rospy.loginfo("Killing %s" %config_id)
         
         config_id = config_id.lower()
         if config_id not in self.NODE_MAP.keys():
@@ -47,6 +47,7 @@ class CP3_Instructions(object):
         nodes = self.NODE_MAP[config_id]
 
         if nodes is None or len(nodes) == 0:
+            rospy.loginfo("Nothing to kill")
             return False, "Nothing to kill"
 
         rosnode.kill_nodes(nodes)
@@ -62,14 +63,17 @@ class CP3_Instructions(object):
             rospy.sleep(1)
             current = rosnode.get_node_names()
         if any(x in current for x in nodes1):
+            rospy.loginfo("Nodes were not killed")
             return False, "Nodes were not killed"
 
-
+        rospy.loginfo("Killing succeeded")
         return True, None
 
     def start_nodes(self,config_id):
+        rospy.loginfo("Starting %s" %config_id)
         config_id = config_id.lower()
         if config_id not in self.LAUNCH_MAP.keys():
+            rospy.loginfo("Illegal config passed in")
             return False, "Illegal config passed in: %s" %config_id
 
         launch = self.LAUNCH_MAP[config_id]
@@ -88,17 +92,20 @@ class CP3_Instructions(object):
             current = rosnode.get_node_names()
 
         if not all(x in current for x in nodes1):
+            rospy.loginfo("Not all nodes started. System in inconsistent state.")
             return False, 'Not all nodes started'
 
-        rospy.sleep(30) #Let's give things a chance to settle down
+
+        #rospy.sleep(10) #Let's give things a chance to settle down
 
         return True, None
 
 
     def set_sensor(self, sensor, enablement):
         sensor = sensor.lower()
-
+        rospy.loginfo("Setting sensor %s to %s" %(sensor, str(enablement)))
         if not sensor in self.SENSORS:
+            rospy.loginfo("Unknown sensor");
             return False, "Unknown sensor: %s" %sensor
         if not isinstance(enablement, bool):
             if enablement in ["True", "true", "on"]:
@@ -122,6 +129,7 @@ class CP3_Instructions(object):
             set_headlamp_srv = rospy.ServiceProxy("/mobile_base/headlamp", ToggleHeadlamp)
             result = set_headlamp_srv(enablement)
         else:
+            rospy.loginfo("Something weird happend in set sensor")
             return False, "Something weird happened in set_sensor"
 
-        return result, None if result else "set_sensor(%s,%s) failed" %(sensor,str(enablement))
+        return result, "set_sensor(%s,%s) %s" %(sensor,str(enablement),"succeeded" if result else "failed")

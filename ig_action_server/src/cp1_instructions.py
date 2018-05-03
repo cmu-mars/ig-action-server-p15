@@ -25,11 +25,13 @@ class CP1_Instructions(object):
         self.battery_charge = self.battery_capacity
 
     def set_config(self, config_id):
-        print("Setting configuration to " + config_id)
+        rospy.loginfo("Setting configuration to " + config_id)
         res = self.set_configuration_srv(config_id)
         if res:
+            rospy.loginfo("Succcess")
             return True, "the new configuration has been set"
         else:
+            rospy.loginfo("Failed")
             return False, "the config_id is invalid"
 
     def set_charging(self, charging):
