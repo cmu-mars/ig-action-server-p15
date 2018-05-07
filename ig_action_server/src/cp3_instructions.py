@@ -13,7 +13,7 @@ class CP3_Instructions(object):
                 "map_server" : ["map_server"],
                 "map_server_obs": ["map_server_obs"]}
 
-    CHARGE_MAP = {"aruco" : 0.7, "amcl" : 0.5, "mrpt" : 0.6}
+    CHARGE_MAP = {"aruco" : 0.8, "amcl" : 0.5, "mrpt" : 0.6}
 
     LAUNCH_MAP = {"aruco" : "cp3-aruco.launch",
                   "amcl" : "cp3-amcl.launch",
