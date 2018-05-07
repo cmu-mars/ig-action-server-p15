@@ -390,7 +390,7 @@ class IGServer(object):
 				self.publish_feedback("%s:SetCP1Config(%s): SUCCESS" %(node,config))
 				return True
 			else:
-				self.publish_feedback("%s:SetCP1Config(%s,%s): FAILED: %s" %(node,config, msg))
+				self.publish_feedback("%s:SetCP1Config(%s): FAILED: %s" %(node,config, msg))
 				return False
 		# 	TODO: a new constant needs to be defined here
 		elif action.operator == CHARGE:
@@ -408,6 +408,18 @@ class IGServer(object):
 				return True
 			else:
 				self.publish_feedback("%s:Charge(%s): FAILED: %s" % (node, secs, msg))
+				return False
+		elif action.operator == SETRECONFIGURING:
+			mode, = action.params
+			self.publish_feedback("%s:SetReconfiguring(%s): START" % (node, mode))
+			if self.cp3 is None:
+				self.cp3 = cp3.CP3_Instructions()
+			status, msg = self.cp3.set_reconfiguring(mode)
+			if status:
+				self.publish_feedback("%s:SetReconfiguring(%s): SUCCESS" %(node, mode))
+				return True
+			else:
+				self.publish_feedback("%s:SetReconfiguring(%s): FAILED: %s" %(node, mode, msg))
 				return False
 		else:
 			self.publish_feedback("Runtime Error: Unsupported action!");

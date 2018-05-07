@@ -37,7 +37,8 @@ tokens = [
   "SETSENSOR",
   "SETCP1CONFIG",
   "STARTNODES",
-  "KILLNODES"
+  "KILLNODES",
+  "SETRECONFIGURING"
 ]
 
 # simple tokens
@@ -75,6 +76,7 @@ t_SETSENSOR = r"SetSensor"
 t_SETCP1CONFIG = r"SetCP1Config"
 t_STARTNODES = r"StartNodes"
 t_KILLNODES = r"KillNodes"
+t_SETRECONFIGURING = r"SetReconfiguring"
 
 # more complex tokens
 

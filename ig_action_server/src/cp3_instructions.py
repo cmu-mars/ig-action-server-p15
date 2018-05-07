@@ -2,6 +2,7 @@ import rospy
 import rosnode
 import subprocess
 import psutil
+from std_msgs.msg import Float64, Bool
 from brass_gazebo_plugins.srv import *
 
 class CP3_Instructions(object):
@@ -11,6 +12,8 @@ class CP3_Instructions(object):
                 "laserscanNodelet" : ["laserscan_nodelet_manager"],
                 "map_server" : ["map_server"],
                 "map_server_obs": ["map_server_obs"]}
+
+    CHARGE_MAP = {"aruco" : 0.7, "amcl" : 0.5, "mrpt" : 0.6}
 
     LAUNCH_MAP = {"aruco" : "cp3-aruco.launch",
                   "amcl" : "cp3-amcl.launch",
@@ -25,6 +28,30 @@ class CP3_Instructions(object):
 
     def __init__(self):
         self.launched = None
+        self.set_utilization_pub = rospy.Publisher("/energy_monitor/set_nuc_utilization", Float64, queue_size=10)
+        self.set_reconfiguring_pub = rospy.Publisher("/ig_interpreter/reconfiguring", Bool, queue_size=10)
+
+    def set_reconfiguring(reconfiguring):
+        if not isinstance(reconfiguring, bool):
+            if not isinstance(reconfiguring, int):
+                if reconfiguring in ["True", "true", "on"]:
+                    reconfiguring = True
+                elif reconfiguring in ["False", "false", "off"]:
+                    reconfiguring = False
+                else:
+                    return False, "Uninterpretable reconfiguring passed in: %s" %str(reconfiguring)
+            else:
+                if reconfiguring == 1:
+                    reconfiguring = True
+                elif reconfiguring = 0:
+                    reconfiguring = False
+                else:
+                    return False, "Uninterpretable reconfiguring passed in: %s" %str(reconfiguring)
+        self.set_reconfiguring_pub.publish(reconfiguring);
+        rospy.sleep(2)
+        rospy.loginfo("Set reconfiguring to %s" %str(reconfiguring))
+        return True, None
+
 
     def kill_launch(self, cmd):
         for proc in psutil.process_iter():
@@ -95,7 +122,9 @@ class CP3_Instructions(object):
             rospy.loginfo("Not all nodes started. System in inconsistent state.")
             return False, 'Not all nodes started'
 
-
+        if config_id in self.CHARGE_MAP.keys():
+            utilization = self.CHARGE_MAP[config_id]
+            self.set_utilization_pub.publish(utilization);
         #rospy.sleep(10) #Let's give things a chance to settle down
 
         return True, None
