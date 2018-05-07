@@ -41,7 +41,7 @@ class Content(Node):
 class Action(Node):
   def __init__(self, operator, params):
     super(Action, self).__init__(operator, params)
-    assert(operator in [DEADLINE,MOVE, SAY, MOVETO, LOCATE, MOVEABS, MOVEREL, TURNABS, TURNREL, FORWARD, CHARGE, RECALIBRATE, SETLOCALIZATIONFIDELITY, MOVEABSH,KILLNODES,SETSENSOR,STARTNODES,SETCP1CONFIG])
+    assert(operator in [DEADLINE,MOVE, SAY, MOVETO, LOCATE, MOVEABS, MOVEREL, TURNABS, TURNREL, FORWARD, CHARGE, RECALIBRATE, SETLOCALIZATIONFIDELITY, MOVEABSH,KILLNODES,SETSENSOR,STARTNODES,SETCP1CONFIG,SETRECONFIGURING])
 
 class Condition(Node):
   def __init__(self, operator, params):
@@ -113,6 +113,7 @@ def p_action(t):
             | STARTNODES LPAR STRING RPAR
             | KILLNODES LPAR STRING RPAR
             | SETCP1CONFIG LPAR NUM RPAR
+            | SETRECONFIGURING LPAR NUM RPAR
             """
   if t[1] == "Move":
     t[0] = Action(MOVE, (t[3], t[5], t[7], t[9], t[11]))
@@ -148,6 +149,8 @@ def p_action(t):
     t[0] = Action(KILLNODES, (t[3],))
   elif t[1] == "SETCP1CONFIG":
     t[0] = Action(SETCP1CONFIG, (t[3],))
+  elif t[1] == "SETRECONFIGURING":
+    t[0] = Action(SETRECONFIGURING, (t[3],))
   else:
     t[0] = Action(SAY, (t[3],))
 

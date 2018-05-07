@@ -14,6 +14,7 @@ import ply.yacc as yacc
 import parserIG
 import statics
 
+import os
 import sys
 
 from constants import *
@@ -37,20 +38,46 @@ try:
 except:
 	pass
 
+from watchdog.observers import Observer
+from watchdog.events import PatternMatchingEventHandler
+
+
 lexer = lex.lex(module=lexerIG)
 parser = yacc.yacc(module=parserIG)
+
+class IGHandler(PatternMatchingEventHandler):
+	patterns=["*.ig"]
+
+	def __init__(self, igserver):
+		self.igs = igserver
+		super(IGHandler, self).__init__()
+
+	def process(self, event):
+		if event.event_type == "modified":
+
+			rospy.loginfo("Got a new file with instructions: %s (%s)" %(event.src_path, event.event_type))
+			self.igs.execute_from_file(event.src_path)
+
+	def on_modified(self, event):
+		self.process(event)
+
+	def on_created(self, event):
+		self.process(event)
 
 
 class CancelTracker(object):
 
 	def __init__(self):
 		self._canceled = False
+		self.lock = threading.Lock()
 
 	def is_canceled(self):
-		return self._canceled
+		with self.lock:
+			return self._canceled
 
 	def cancel(self):
-		self._canceled = True
+		with self.lock:
+			self._canceled = True
 
 class IGServer(object):
 	_feedback = ig_action_msgs.msg.InstructionGraphFeedback()
@@ -71,6 +98,7 @@ class IGServer(object):
 		self._notify_user = rospy.Publisher("/notify_user", UserNotification, queue_size=1)
 
 
+
 #		rospy.Subscriber("euler_orientation", euler, self.euler_callback)
 #		rospy.sleep(10)
 		
@@ -86,6 +114,26 @@ class IGServer(object):
 		publisher.move_base_action_client().cancel_all_goals()
 
 	def execute_cb(self, goal):
+		self.wait_for_cancel_to_finish()
+		self.execute_instructions(goal.order)
+
+	def execute_from_file(self, igfile):
+		if self._canceled is not None:
+			self._canceled.cancel()
+			publisher.move_base_action_client().cancel_all_goals()
+
+		with open(igfile, 'r') as f:
+			instructions=f.read()
+		self.wait_for_cancel_to_finish()
+		self.execute_instructions(instructions)
+
+	def wait_for_cancel_to_finish(self):
+		while self._canceled is not None:
+			rospy.loginfo("Waiting for old instructions to be canceled")
+			time.sleep(1)
+
+
+	def execute_instructions(self, instructions):
 		# Setting the rate of execution.
 		if not self._canceled is None and not self._canceled.is_canceled():
 			print("Should cancel a goal first")
@@ -97,13 +145,13 @@ class IGServer(object):
 		
 		# Appending the feedback for goal recieved.
 		self.publish_feedback('Recieved new goal!')
-		rospy.loginfo('BRASS | IG | Recieved a new goal: %s' % (goal.order))
+		rospy.loginfo('BRASS | IG | Recieved a new goal: %s' % (instructions))
 
 		# start core code
 		self.publish_feedback('Parsing goal')
 		rospy.loginfo('Parsing goal')
 		try:
-			ast = parser.parse(goal.order)
+			ast = parser.parse(instructions)
 		except Exception, e:
 			self._success = False
 			print e
@@ -113,7 +161,7 @@ class IGServer(object):
 		else:
 			self.publish_feedback('Validating instructions')
 			assert(statics.valid(ast))
-			self.publish_feedback('Received new valid IG: %s' %(goal.order))
+			self.publish_feedback('Received new valid IG: %s' %(instructions))
 			self.publish_feedback('Executing graph')
 			rospy.loginfo('Executing the graph')
 			if self._canceled.is_canceled():
@@ -131,6 +179,7 @@ class IGServer(object):
 		elif self._success:
 			self.publish_result('Execution for goal completed successfully')
 			rospy.loginfo('BRASS | IG | Goal completed successfully')
+			self._canceled = None
 		else:
 			self.publish_result('Execution for goal failed')
 			rospy.loginfo('BRASS | IG | Goal failed')
@@ -341,7 +390,7 @@ class IGServer(object):
 				self.publish_feedback("%s:SetCP1Config(%s): SUCCESS" %(node,config))
 				return True
 			else:
-				self.publish_feedback("%s:SetCP1Config(%s,%s): FAILED: %s" %(node,config, msg))
+				self.publish_feedback("%s:SetCP1Config(%s): FAILED: %s" %(node,config, msg))
 				return False
 		# 	TODO: a new constant needs to be defined here
 		elif action.operator == CHARGE:
@@ -359,6 +408,18 @@ class IGServer(object):
 				return True
 			else:
 				self.publish_feedback("%s:Charge(%s): FAILED: %s" % (node, secs, msg))
+				return False
+		elif action.operator == SETRECONFIGURING:
+			mode, = action.params
+			self.publish_feedback("%s:SetReconfiguring(%s): START" % (node, mode))
+			if self.cp3 is None:
+				self.cp3 = cp3.CP3_Instructions()
+			status, msg = self.cp3.set_reconfiguring(mode)
+			if status:
+				self.publish_feedback("%s:SetReconfiguring(%s): SUCCESS" %(node, mode))
+				return True
+			else:
+				self.publish_feedback("%s:SetReconfiguring(%s): FAILED: %s" %(node, mode, msg))
 				return False
 		else:
 			self.publish_feedback("Runtime Error: Unsupported action!");
@@ -446,6 +507,49 @@ class IGServer(object):
 if __name__ == "__main__":
 	rospy.init_node('ig_action_server')
 	igserver = IGServer('ig_action_server')
+
+	args = sys.argv[1:]
+	if args:
+
+
+		igfile = None
+		lock = threading.Lock()
+
+		class XXX:
+			def __init__(self):
+				return
+
+			def execute_from_file(self, ig): 
+				global igfile
+				with lock:
+					igfile = ig
+
+		def new_action_run():
+			while not rospy.is_shutdown():
+				global igfile
+				ig = None
+				with lock:
+					if igfile is not None:
+						ig = igfile
+						igfile = None
+
+				if ig is not None:
+					igserver.execute_from_file(ig)
+				else:
+					rospy.sleep(1)
+
+		filewatcher = threading.Thread(target=new_action_run)
+		filewatcher.start()  
+
+		observer = Observer()
+		observer.schedule(IGHandler(XXX()), path=os.path.expanduser(args[0]))
+		observer.start()
+
+		def shutdown_hook():
+			observer.stop()
+			observer.join()
+
+		rospy.on_shutdown(shutdown_hook)
 	rospy.spin()
 
 
