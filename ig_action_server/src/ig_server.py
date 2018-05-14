@@ -370,7 +370,7 @@ class IGServer(object):
 				self.publish_feedback("%s:StartNodes(%s): SUCCESS" %(node,nodes))
 				return True
 			else:
-				self.publish_feedback("%s:StartNodes(%s,%s): FAILED: %s" %(node,nodes, msg))
+				self.publish_feedback("%s:StartNodes(%s): FAILED: %s" %(node,nodes, msg))
 				return False
 		elif action.operator == KILLNODES:
 			nodes, = action.params
@@ -381,7 +381,7 @@ class IGServer(object):
 				self.publish_feedback("%s:KillNodes(%s): SUCCESS" %(node,nodes))
 				return True
 			else:
-				self.publish_feedback("%s:KillNodes(%s,%s): FAILED: %s" %(node,nodes, msg))
+				self.publish_feedback("%s:KillNodes(%s): FAILED: %s" %(node,nodes, msg))
 				return False
 		elif action.operator == SETCP1CONFIG:
 			config, = action.params
