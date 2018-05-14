@@ -35,8 +35,10 @@ except:
 
 try:
 	import cp3_instructions as cp3
-except:
-	pass
+except Exception as e:
+	print(e)
+	traceback.print_exc()
+	
 
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
