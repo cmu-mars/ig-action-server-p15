@@ -43,7 +43,7 @@ class CP3_Instructions(object):
             else:
                 if reconfiguring == 1:
                     reconfiguring = True
-                elif reconfiguring = 0:
+                elif reconfiguring == 0:
                     reconfiguring = False
                 else:
                     return False, "Uninterpretable reconfiguring passed in: %s" %str(reconfiguring)
