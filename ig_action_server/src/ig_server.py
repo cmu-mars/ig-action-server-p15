@@ -30,14 +30,17 @@ import publisher
 
 try:
 	import cp1_instructions as cp1
-except:
-	pass
+except Exception as e:
+	print(e)
+	traceback.print_exc()
+	print("This is not an error")
 
 try:
 	import cp3_instructions as cp3
 except Exception as e:
 	print(e)
 	traceback.print_exc()
+	print("This is not an error")
 	
 
 from watchdog.observers import Observer
