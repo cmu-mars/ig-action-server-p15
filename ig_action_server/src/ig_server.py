@@ -124,6 +124,7 @@ class IGServer(object):
 
 	def execute_from_file(self, igfile):
 		if self._canceled is not None:
+			self._as.set_preempted();
 			self._canceled.cancel()
 			publisher.move_base_action_client().cancel_all_goals()
 
