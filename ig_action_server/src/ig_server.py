@@ -403,7 +403,6 @@ class IGServer(object):
 			self.publish_feedback("%s:Charge(%s): START" % (node, secs))
 			if self.cp1 is None:
 				self.cp1 = cp1.CP1_Instructions()
-			self.cp1.track_battery_charge()
 			status, msg = self.cp1.charge()
 			if self._canceled.is_canceled():
 				self.publish_feedback("%s:Charge(%s): CANCELED" % (node, secs))

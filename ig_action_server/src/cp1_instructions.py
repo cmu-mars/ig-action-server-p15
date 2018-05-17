@@ -11,8 +11,9 @@ import json
 class CP1_Instructions(object):
     ros_node = '/battery_monitor_client'
     model_name = '/battery_demo_model'
-    config_file = os.path.expanduser("~/cp1/plugins_config.json")
+    config_file = os.path.expanduser("~/cp1/config.json")
     sleep_interval = 5
+    battery_charge_tolerance_threshold = 1000
 
     def __init__(self):
         self.set_configuration_srv = rospy.ServiceProxy(self.ros_node + self.model_name + '/set_robot_configuration', SetConfig)
@@ -22,7 +23,7 @@ class CP1_Instructions(object):
             data = json.load(db)
         self.battery_capacity = data['battery_capacity']
         self.charging_rate = data['charging_rate']
-        self.battery_charge = self.battery_capacity
+        self.track_battery_charge()
 
     def set_config(self, config_id):
         rospy.loginfo("Setting configuration to " + config_id)
@@ -55,7 +56,7 @@ class CP1_Instructions(object):
         return True, "Charging is done"
 
     def is_fully_charged(self):
-        if self.battery_charge == self.battery_capacity:
+        if abs(self.battery_charge - self.battery_capacity) <= self.battery_charge_tolerance_threshold:
             rospy.loginfo("Battery is fully charged.")
             return True
         else:
