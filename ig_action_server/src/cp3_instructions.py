@@ -34,7 +34,7 @@ class CP3_Instructions(object):
     def set_reconfiguring(self,reconfiguring):
         print("reconfiguring(%s)" %reconfiguring)
         if not isinstance(reconfiguring, bool):
-            if not isinstance(reconfiguring, int):
+            if not isinstance(reconfiguring, float):
                 if reconfiguring in ["True", "true", "on"]:
                     reconfiguring = True
                 elif reconfiguring in ["False", "false", "off"]:
