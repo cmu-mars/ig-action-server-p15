@@ -32,6 +32,7 @@ class CP3_Instructions(object):
         self.set_reconfiguring_pub = rospy.Publisher("/ig_interpreter/reconfiguring", Bool, queue_size=10)
 
     def set_reconfiguring(self,reconfiguring):
+        print("reconfiguring(%s)" %reconfiguring)
         if not isinstance(reconfiguring, bool):
             if not isinstance(reconfiguring, int):
                 if reconfiguring in ["True", "true", "on"]:
@@ -39,6 +40,7 @@ class CP3_Instructions(object):
                 elif reconfiguring in ["False", "false", "off"]:
                     reconfiguring = False
                 else:
+                    print("Uninterpretable reconfiguring passed in: %s" %str(reconfiguring))
                     return False, "Uninterpretable reconfiguring passed in: %s" %str(reconfiguring)
             else:
                 if reconfiguring == 1:
@@ -46,6 +48,7 @@ class CP3_Instructions(object):
                 elif reconfiguring == 0:
                     reconfiguring = False
                 else:
+                    print("Uninterpretable reconfiguring passed in: %s" %str(reconfiguring))
                     return False, "Uninterpretable reconfiguring passed in: %s" %str(reconfiguring)
         self.set_reconfiguring_pub.publish(reconfiguring);
         rospy.sleep(2)
