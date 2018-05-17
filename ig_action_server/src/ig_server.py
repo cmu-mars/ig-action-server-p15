@@ -40,7 +40,7 @@ try:
 except Exception as e:
 	print(e)
 	traceback.print_exc()
-	print("This is not an error")
+	print("cp1_ta    | ImportError: No module named brass_gazebo_plugins.srv: ===> This is not an error")
 	
 
 from watchdog.observers import Observer
