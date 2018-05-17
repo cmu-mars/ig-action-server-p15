@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import roslib; roslib.load_manifest('ig_action_msgs')
+import roslib
 import rospy
 import threading
 
@@ -28,61 +28,61 @@ import time
 import tf
 import publisher
 
-try:
-	import cp1_instructions as cp1
-except Exception as e:
-	print(e)
-	traceback.print_exc()
-	print("This is not an error")
+roslib.load_manifest('ig_action_msgs')
 
 try:
-	import cp3_instructions as cp3
+    import cp1_instructions as cp1
 except Exception as e:
-	print(e)
-	traceback.print_exc()
-	print("cp1_ta    | ImportError: No module named brass_gazebo_plugins.srv: ===> This is not an error")
-	
+    print(e)
+    traceback.print_exc()
+    print("This is not an error")
+
+try:
+    import cp3_instructions as cp3
+except Exception as e:
+    print(e)
+    traceback.print_exc()
+    print("cp1_ta    | ImportError: No module named brass_gazebo_plugins.srv: ===> This is not an error")
 
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
-
 lexer = lex.lex(module=lexerIG)
 parser = yacc.yacc(module=parserIG)
 
+
 class IGHandler(PatternMatchingEventHandler):
-	patterns=["*.ig"]
+    patterns = ["*.ig"]
 
-	def __init__(self, igserver):
-		self.igs = igserver
-		super(IGHandler, self).__init__()
+    def __init__(self, igserver):
+        self.igs = igserver
+        super(IGHandler, self).__init__()
 
-	def process(self, event):
-		if event.event_type == "modified":
+    def process(self, event):
+        if event.event_type == "modified":
+            rospy.loginfo("Got a new file with instructions: %s (%s)" % (event.src_path, event.event_type))
+            self.igs.execute_from_file(event.src_path)
 
-			rospy.loginfo("Got a new file with instructions: %s (%s)" %(event.src_path, event.event_type))
-			self.igs.execute_from_file(event.src_path)
+    def on_modified(self, event):
+        self.process(event)
 
-	def on_modified(self, event):
-		self.process(event)
-
-	def on_created(self, event):
-		self.process(event)
+    def on_created(self, event):
+        self.process(event)
 
 
 class CancelTracker(object):
 
-	def __init__(self):
-		self._canceled = False
-		self.lock = threading.Lock()
+    def __init__(self):
+        self._canceled = False
+        self.lock = threading.Lock()
 
-	def is_canceled(self):
-		with self.lock:
-			return self._canceled
+    def is_canceled(self):
+        with self.lock:
+            return self._canceled
 
-	def cancel(self):
-		with self.lock:
-			self._canceled = True
+    def cancel(self):
+        with self.lock:
+            self._canceled = True
 
 class IGServer(object):
 	_feedback = ig_action_msgs.msg.InstructionGraphFeedback()
@@ -390,18 +390,21 @@ class IGServer(object):
 				self.publish_feedback("%s:KillNodes(%s): FAILED: %s" %(node,nodes, msg))
 				return False
 		elif action.operator == SETCP1CONFIG:
-			self.publish_feedback("%s:SetCP1Config(%s): START" %(node,config))
+			rospy.loginfo("inside **SETCP1CONFIG**")
 			config, = action.params
 			if self.cp1 is None:
+				rospy.loginfo("inside **self.cp1 is None**")
 				self.cp1 = cp1.CP1_Instructions()
+				rospy.loginfo("after **self.cp1 is None**")
+			rospy.loginfo("**setting config**")
 			status, msg = self.cp1.set_config(config)
+			rospy.loginfo("**set config got executed**")
 			if status:
-				self.publish_feedback("%s:SetCP1Config(%s): SUCCESS" %(node,config))
+				self.publish_feedback("%s:SetCP1Config(%s): SUCCESS" % (node, config))
 				return True
 			else:
-				self.publish_feedback("%s:SetCP1Config(%s): FAILED: %s" %(node,config, msg))
+				self.publish_feedback("%s:SetCP1Config(%s): FAILED: %s" % (node, config, msg))
 				return False
-		# 	TODO: a new constant needs to be defined here
 		elif action.operator == CHARGE:
 			secs, = action.params
 			self.publish_feedback("%s:Charge(%s): START" % (node, secs))
@@ -509,57 +512,4 @@ class IGServer(object):
 			else:
 			  config = config2
 		(_, _, _, O) = config
-
-
-
-if __name__ == "__main__":
-	rospy.init_node('ig_action_server')
-	igserver = IGServer('ig_action_server')
-
-	args = sys.argv[1:]
-	if args:
-
-
-		igfile = None
-		lock = threading.Lock()
-
-		class XXX:
-			def __init__(self):
-				return
-
-			def execute_from_file(self, ig): 
-				global igfile
-				with lock:
-					igfile = ig
-
-		def new_action_run():
-			while not rospy.is_shutdown():
-				global igfile
-				ig = None
-				with lock:
-					if igfile is not None:
-						ig = igfile
-						igfile = None
-
-				if ig is not None:
-					igserver.execute_from_file(ig)
-				else:
-					rospy.sleep(1)
-
-		filewatcher = threading.Thread(target=new_action_run)
-		filewatcher.start()  
-
-		observer = Observer()
-		observer.schedule(IGHandler(XXX()), path=os.path.expanduser(args[0]))
-		observer.start()
-
-		def shutdown_hook():
-			observer.stop()
-			observer.join()
-
-		rospy.on_shutdown(shutdown_hook)
-	rospy.spin()
-
-
-
 
