@@ -51,7 +51,7 @@ class CP3_Instructions(object):
                     print("Uninterpretable reconfiguring passed in: %s" %str(reconfiguring))
                     return False, "Uninterpretable reconfiguring passed in: %s" %str(reconfiguring)
         self.set_reconfiguring_pub.publish(reconfiguring);
-        rospy.sleep(2)
+        rospy.sleep(5)
         rospy.loginfo("Set reconfiguring to %s" %str(reconfiguring))
         return True, None
 
