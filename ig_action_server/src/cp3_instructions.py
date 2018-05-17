@@ -28,8 +28,8 @@ class CP3_Instructions(object):
 
     def __init__(self):
         self.launched = None
-        self.set_utilization_pub = rospy.Publisher("/energy_monitor/set_nuc_utilization", Float64, queue_size=10)
-        self.set_reconfiguring_pub = rospy.Publisher("/ig_interpreter/reconfiguring", Bool, queue_size=10)
+        self.set_utilization_pub = rospy.Publisher("/energy_monitor/set_nuc_utilization", Float64)
+        self.set_reconfiguring_pub = rospy.Publisher("/ig_interpreter/reconfiguring", Bool)
 
     def set_reconfiguring(self,reconfiguring):
         print("reconfiguring(%s)" %reconfiguring)
