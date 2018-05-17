@@ -513,3 +513,54 @@ class IGServer(object):
 			  config = config2
 		(_, _, _, O) = config
 
+if __name__ == "__main__":
+    rospy.init_node('ig_action_server')
+    igserver = IGServer('ig_action_server')
+
+    args = sys.argv[1:]
+    if args:
+
+        igfile = None
+        lock = threading.Lock()
+
+
+        class XXX:
+            def __init__(self):
+                return
+
+            def execute_from_file(self, ig):
+                global igfile
+                with lock:
+                    igfile = ig
+
+
+        def new_action_run():
+            while not rospy.is_shutdown():
+                global igfile
+                ig = None
+                with lock:
+                    if igfile is not None:
+                        ig = igfile
+                        igfile = None
+
+                if ig is not None:
+                    igserver.execute_from_file(ig)
+                else:
+                    rospy.sleep(1)
+
+
+        filewatcher = threading.Thread(target=new_action_run)
+        filewatcher.start()
+
+        observer = Observer()
+        observer.schedule(IGHandler(XXX()), path=os.path.expanduser(args[0]))
+        observer.start()
+
+
+        def shutdown_hook():
+            observer.stop()
+            observer.join()
+
+
+        rospy.on_shutdown(shutdown_hook)
+rospy.spin()

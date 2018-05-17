@@ -31,7 +31,7 @@ class CP3_Instructions(object):
         self.set_utilization_pub = rospy.Publisher("/energy_monitor/set_nuc_utilization", Float64, queue_size=10)
         self.set_reconfiguring_pub = rospy.Publisher("/ig_interpreter/reconfiguring", Bool, queue_size=10)
 
-    def set_reconfiguring(reconfiguring):
+    def set_reconfiguring(self,reconfiguring):
         if not isinstance(reconfiguring, bool):
             if not isinstance(reconfiguring, int):
                 if reconfiguring in ["True", "true", "on"]:
