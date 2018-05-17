@@ -1,8 +1,6 @@
 #! /usr/bin/env python
 
-import roslib;
-
-roslib.load_manifest('ig_action_msgs')
+import roslib
 import rospy
 import threading
 
@@ -30,6 +28,8 @@ import time
 import tf
 import publisher
 
+roslib.load_manifest('ig_action_msgs')
+
 try:
     import cp1_instructions as cp1
 except Exception as e:
@@ -42,7 +42,7 @@ try:
 except Exception as e:
     print(e)
     traceback.print_exc()
-    print("This is not an error")
+    print("cp1_ta    | ImportError: No module named brass_gazebo_plugins.srv: ===> This is not an error")
 
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
@@ -104,8 +104,8 @@ class IGServer(object):
         self._as.register_preempt_callback(self.preempt_cb)
         self._notify_user = rospy.Publisher("/notify_user", UserNotification, queue_size=1)
 
-    #		rospy.Subscriber("euler_orientation", euler, self.euler_callback)
-    #		rospy.sleep(10)
+    # rospy.Subscriber("euler_orientation", euler, self.euler_callback)
+    # rospy.sleep(10)
 
     # def is_canceled(self,goal):
 
