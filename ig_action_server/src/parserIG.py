@@ -147,9 +147,9 @@ def p_action(t):
     t[0] = Action(STARTNODES, (t[3],))
   elif t[1] == "KillNodes":
     t[0] = Action(KILLNODES, (t[3],))
-  elif t[1] == "SETCP1CONFIG":
+  elif t[1] == "SetCP1Config":
     t[0] = Action(SETCP1CONFIG, (t[3],))
-  elif t[1] == "SETRECONFIGURING":
+  elif t[1] == "SetReconfiguring":
     t[0] = Action(SETRECONFIGURING, (t[3],))
   else:
     t[0] = Action(SAY, (t[3],))

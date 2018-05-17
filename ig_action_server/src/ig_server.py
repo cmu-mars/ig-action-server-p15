@@ -355,6 +355,7 @@ class IGServer(object):
 			return True
 		elif action.operator == SETSENSOR:
 			sensor, enablement = action.params
+			self.publish_feedback("%s:SetSensor(%s,%s): START" %(node,sensor, enablement))
 			if self.cp3 is None:
 				self.cp3 = cp3.CP3_Instructions()
 			status, msg = self.cp3.set_sensor(sensor, enablement)
@@ -366,6 +367,7 @@ class IGServer(object):
 				return False
 		elif action.operator == STARTNODES:
 			nodes, = action.params
+			self.publish_feedback("%s:StartNodes(%s): START" %(node,nodes))
 			if self.cp3 is None:
 				self.cp3 = cp3.CP3_Instructions()
 			status, msg = self.cp3.start_nodes(nodes)
@@ -377,6 +379,7 @@ class IGServer(object):
 				return False
 		elif action.operator == KILLNODES:
 			nodes, = action.params
+			self.publish_feedback("%s:KillNodes(%s): START" %(node,nodes))
 			if self.cp3 is None:
 				self.cp3 = cp3.CP3_Instructions()
 			status, msg = self.cp3.kill_nodes(nodes)
@@ -387,6 +390,7 @@ class IGServer(object):
 				self.publish_feedback("%s:KillNodes(%s): FAILED: %s" %(node,nodes, msg))
 				return False
 		elif action.operator == SETCP1CONFIG:
+			self.publish_feedback("%s:SetCP1Config(%s): START" %(node,config))
 			config, = action.params
 			if self.cp1 is None:
 				self.cp1 = cp1.CP1_Instructions()
