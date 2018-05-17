@@ -26,7 +26,7 @@ class CP1_Instructions(object):
         self.track_battery_charge()
 
     def set_config(self, config_id):
-        rospy.loginfo("Setting configuration to " + config_id)
+        rospy.loginfo("Setting configuration to " + str(config_id))
         res = self.set_configuration_srv(config_id)
         if res:
             rospy.loginfo("Succcess")
