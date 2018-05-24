@@ -33,16 +33,16 @@ roslib.load_manifest('ig_action_msgs')
 try:
     import cp1_instructions as cp1
 except Exception as e:
-    print(e)
-    traceback.print_exc()
-    print("This is not an error")
+	if e.message != "No module named brass_gazebo_config_manager.srv":
+		print(e)
+		traceback.print_exc()
 
 try:
     import cp3_instructions as cp3
 except Exception as e:
-    print(e)
-    traceback.print_exc()
-    print("cp1_ta    | ImportError: No module named brass_gazebo_plugins.srv: ===> This is not an error")
+	if e.message != 'No module named brass_gazebo_plugins.srv':
+		print(e)
+		traceback.print_exc()
 
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
@@ -344,7 +344,7 @@ class IGServer(object):
 				self.publish_feedback("%s:MoveAbsH(%s,%s,%s,%s): SUCCESS" %(node,x,y,v,w))
 				return True
 			else:
-				self.publish_feedback("%s:MoveAbs(%s,%s,%s, %s): FAILED: %s" %(node,x,y,v,w,msg))
+				self.publish_feedback("%s:MoveAbsH(%s,%s,%s, %s): FAILED: %s" %(node,x,y,v,w,msg))
 				return False
 		elif action.operator == DEADLINE:
 			dl, = action.params
