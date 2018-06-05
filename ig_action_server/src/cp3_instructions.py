@@ -9,18 +9,18 @@ class CP3_Instructions(object):
     NODE_MAP = {"aruco" : ["aruco_marker_publisher_front", "aruco_marker_publisher_back", "marker_manager", "marker_pose_publisher"],
                 "amcl" : ["amcl"],
                 "mrpt" : ["mrpt_localization_node"],
-                "laserscanNodelet" : ["laserscan_nodelet_manager"],
-                "mapServer" : ["map_server"],
-                "mapServerObs": ["map_server_obs"]}
+                "laserscannodelet" : ["laserscan_nodelet_manager"],
+                "mapserver" : ["map_server"],
+                "mapserverobs": ["map_server_obs"]}
 
     CHARGE_MAP = {"aruco" : 0.8, "amcl" : 0.5, "mrpt" : 0.6}
 
     LAUNCH_MAP = {"aruco" : "cp3-aruco.launch",
                   "amcl" : "cp3-amcl.launch",
                   "mrpt" : "cp3-mrpt.launch",
-                  "laserscanNodelet" : "cp3-kinect.launch",
-                  "mapServer" : "cp3-maps.launch",
-                  "mapServerObs" : "cp3-maps-obs.launch"}
+                  "laserscannodelet" : "cp3-kinect.launch",
+                  "mapserver" : "cp3-maps.launch",
+                  "mapserverobs" : "cp3-maps-obs.launch"}
 
     SENSORS = ["kinect", "lidar", "cameras", "camera", "headlamp"]
 
