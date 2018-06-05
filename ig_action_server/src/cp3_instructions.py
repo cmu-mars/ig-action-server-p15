@@ -20,7 +20,7 @@ class CP3_Instructions(object):
                   "mrpt" : "cp3-mrpt.launch",
                   "laserscannodelet" : "cp3-kinect.launch",
                   "mapserver" : "cp3-maps.launch",
-                  "mapserverobs" : "cp3-maps-obs.launch"}
+                  "mapserverobs" : "cp3-obstacle-maps.launch"}
 
     SENSORS = ["kinect", "lidar", "cameras", "camera", "headlamp"]
 
@@ -123,7 +123,8 @@ class CP3_Instructions(object):
             current = rosnode.get_node_names()
 
         if not all(x in current for x in nodes1):
-            rospy.loginfo("Not all nodes started. System in inconsistent state.")
+            rospy.loginfo("Not all nodes started for %s. System in inconsistent state." %configId)
+            rospy.loginfo("Expected %s, got %s" %(nodes1,current))
             return False, 'Not all nodes started'
 
         if config_id in self.CHARGE_MAP.keys():
