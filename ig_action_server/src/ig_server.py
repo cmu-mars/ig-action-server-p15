@@ -131,7 +131,7 @@ class IGServer(object):
 		with open(igfile, 'r') as f:
 			instructions=f.read()
 		self.wait_for_cancel_to_finish()
-		if instructions!="NONE":
+		if "NONE" in instructions:
 			self.execute_instructions(instructions)
 
 	def wait_for_cancel_to_finish(self):
