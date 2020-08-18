@@ -3,7 +3,7 @@ from typing import List
 
 import attr
 
-from ig_server.ig_server import PortedNode
+from ig_server.ros_wrappers import PortedNode
 
 
 @attr.s(slots=True)

@@ -11,7 +11,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 
 from ig_server.abstract_instruction import AbstractInstruction
-from ig_server.ig_server import PortedNode
+from ig_server.ros_wrappers import PortedNode
 
 #################################################################################
 # Had to pull this in because tf2 is not translated to ROS 2 yet for python
@@ -87,6 +87,7 @@ class Locate(AbstractInstruction):
     y: float = attr.ib()
     w: float = attr.ib()
 
+    @classmethod
     def load_from_params(cls, node: PortedNode, params: List[any]):
         if len(params) < 3:
             raise Exception(f'Locate found {len(params)} parameters, expecting 3')
@@ -96,12 +97,11 @@ class Locate(AbstractInstruction):
 
         return Locate(node=node, x=x, y=y, w=w)
 
-    def __attrs_post_init__(self):
+    def execute(self):
         if "initialpose" not in self.node.ports:
             self.node.ports['initialpose'] = rclpy.create_publisher(PoseWithCovarianceStamped,
                                                                     'initialpose', 10, latch=True)
 
-    def execute(self):
         initial_pose = PoseWithCovarianceStamped()
         initial_pose.header.stamp = rclpy.Time.now()
         initial_pose.header.frame_id = 'map'
@@ -127,7 +127,7 @@ class Locate(AbstractInstruction):
         pass
 
     def to_pretty_string(self):
-        return f'Locate({self._x}, {self._y}, {self._w})'
+        return f'Locate({self.x}, {self.y}, {self.w})'
 
 
 @attr.s(slots=True)
@@ -140,7 +140,7 @@ class Move(AbstractInstruction):
 
     _goal: NavigateToPose = attr.ib(init=False)
     _result: (bool, str) = attr.ib(init=False)
-    _active_goal_handle: rclpy.action.GoalHandle = attr.ib(init=False)
+    _active_goal_handle = attr.ib(init=False)  # Type is not exported
     _result_block: threading.Event = attr.ib(init=False)
     _cancel_block: threading.Event = attr.ib(init=False)
 
@@ -157,25 +157,20 @@ class Move(AbstractInstruction):
                     x=x, y=y, velocity=v, action=a, yaw=w)
 
     def __attrs_post_init__(self):
-        self._goal = self.create_goal()
         self._result = None
         self._active_goal_handle = None
         self._result_block = None
         self._cancel_block = None
-
-        if "nav2_actions" in self.node.ports.keys():
-            self.node.ports['nav2_pose'] = ActionClient(self.node, NavigateToPose,
-                                                        "/NavigateToPose")
 
     def create_goal(self):
         if self.action == 'Absolute':
             frame_type = "map"
         else:
             frame_type = "base_link"
-
-        goal = NavigateToPose()
+        goal = NavigateToPose.Goal()
         goal.pose.header.frame_id = frame_type
-        goal.pose.header.stamp = rclpy.Time.now()
+        goal.pose.header.stamp = self.node.get_clock().now().to_msg() if self.node is not None \
+            else None
         goal.pose.pose.position.x = self.x
         goal.pose.pose.position.y = self.y if frame_type == 'map' else 0
         q = quaternion_from_euler(0, 0, self.yaw)
@@ -187,12 +182,18 @@ class Move(AbstractInstruction):
         return goal
 
     def execute(self):
+        if self.node is not None:
+            if "nav2_actions" in self.node.ports.keys():
+                self.node.ports['nav2_pose'] = ActionClient(self.node, NavigateToPose,
+                                                            "/NavigateToPose")
+        self._goal = self.create_goal()
+
         self._cancel_block = None
         self.node.ports['nav2_pose'].wait_for_server()
 
         self._result_block = threading.Event()
 
-        gh = self.node.ports['nav2_pose'].send_goal_async(self.goal)
+        gh = self.node.ports['nav2_pose'].send_goal_async(self._goal)
         gh.add_done_callback(self._goal_response_callback)
 
         self._result_block.wait()
@@ -231,8 +232,8 @@ class Move(AbstractInstruction):
         self._cancel_block.set()
 
     def to_pretty_string(self):
-        return f"Move({self._x}, {self._y}, {self._velocity}, {self._action}" \
-               f"{f', {self._w}' if self._w != 0 else ''})"
+        return f"Move({self.x}, {self.y}, {self.velocity}, {self.action}" \
+               f"{f', {self.w}' if self.w != 0 else ''})"
 
 
 class MoveAbs(Move):
@@ -249,7 +250,7 @@ class MoveAbs(Move):
         return Move(x=x, y=y, velocity=v, node=Node, action="Absolute", yaw=0)
 
     def to_pretty_string(self):
-        return f"MoveAbs({self._args[0]}, {self._args[1]}, {self._args[2]})"
+        return f"MoveAbs({self.x}, {self.y}, {self.velocity})"
 
 
 @attr.s(slots=True)
@@ -264,7 +265,7 @@ class Stop(AbstractInstruction):
         distance = float(params[0])
         object_ = str(params[1])
 
-        return Stop(distance=distance, object_=object_)
+        return Stop(node=node, distance=distance, object_=object_)
 
     def execute(self):
         print(f"Checking if {self.object_} is within {self.distance} distance...")
@@ -291,7 +292,7 @@ class Visible(AbstractInstruction):
         if len(params) != 1:
             raise Exception(f'Visible received {len(params)} parameters, expecting 1')
         o = str(params[0])
-        return Visible(object_=o)
+        return Visible(node=node, object_=o)
 
     def execute(self):
         print(f"Checking if {self.object_} is visible...")

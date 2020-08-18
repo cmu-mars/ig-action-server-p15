@@ -1,18 +1,14 @@
 import threading
 import time
-from typing import Dict
 
 import rclpy
 from ig_action_msgs.action import InstructionGraph
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
-from rclpy.node import Node
 
 from ig_server.abstract_instruction import AbstractInstruction
 from ig_server.ig_evaluator_lark import IGEvaluator
-
-
-class PortedNode(Node):
-    ports: Dict[str, any] = []
+from ig_server.ros_wrappers import PortedNode
+from ig_server.instructions import common, sei
 
 
 class CancelTracker(object):
@@ -30,7 +26,7 @@ class CancelTracker(object):
             self._canceled = True
 
 
-class IGServer(Node):
+class IGServer(PortedNode):
     _init_time = None
     _tf = None
     _canceled: CancelTracker = None
@@ -96,9 +92,9 @@ class IGServer(Node):
         self._canceled = CancelTracker()
         self.publish_feedback(f'BRASS | IG | Received a new goal: {instructions}')
 
-        evaluator: IGEvaluator = IGEvaluator(instructions, self._canceled.is_canceled(),
+        evaluator: IGEvaluator = IGEvaluator(self, instructions, self._canceled.is_canceled(),
                                              self.publish_feedback(),
-                                             ['ig_server.common', 'ig_server.sei'])
+                                             [common, sei])
         self._success = evaluator.check_valid()
         if self._success and not self._canceled.is_canceled():
             self.publish_feedback(f'Received a new valid IG: {instructions}')

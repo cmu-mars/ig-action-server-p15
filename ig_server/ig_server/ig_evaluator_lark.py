@@ -1,13 +1,13 @@
 import inspect
-import sys
 import traceback
 from typing import Dict, List
 
 import attr
-from lark import Lark, Transformer, v_args, Visitor, Interpreter, Tree
+from lark import Transformer, v_args, Visitor, Tree, Lark
+from lark.visitors import Interpreter
 
-from ig_server.abstract_instruction import AbstractInstruction, AbstractCondition
-from ig_server.ig_server import PortedNode
+from ig_server.abstract_instruction import AbstractInstruction
+from ig_server.ros_wrappers import PortedNode
 
 IGGrammar = IGGrammar = '''
     program: "P" "(" vertex "," vertices ")"
@@ -15,7 +15,7 @@ IGGrammar = IGGrammar = '''
             | vertex "::" vertices
     vertex: "V" "(" label "," content ")"
     content: "do" action "then" label -> dothen
-           | "do" action "until" cnd "then" label -> dountil
+           | "do" action "until" action "then" label -> dountil
            | "if" action "then" label "else" label -> if_
            | "goto" label -> goto
            | "end" -> end
@@ -39,7 +39,6 @@ IGGrammar = IGGrammar = '''
 @attr.s(slots=True)
 class IGTypeChecker(Visitor):
     actions: Dict[str, AbstractInstruction] = attr.ib()
-    conditions: Dict[str, AbstractCondition] = attr.ib()
     labels: List[int] = attr.ib()
 
     _errors: List[str] = []
@@ -57,21 +56,21 @@ class IGTypeChecker(Visitor):
         return self._errors
 
     def dothen(self, tree):
-        if tree.children[1] not in self._labels:
+        if tree.children[1] not in self.labels:
             self._errors.append(f'do .. then refers to unknown label: {tree.children[1]}')
 
     def dountil(self, tree):
-        if tree.children[2] not in self._labels:
+        if tree.children[2] not in self.labels:
             self._errors.append(f'do .. then refers to unknown label: {tree.children[2]}')
 
     def if_(self, tree):  # cnd, tLabel, fLabel):
-        if tree.children[1] not in self._labels:
+        if tree.children[1] not in self.labels:
             self._errors.append(f'if else refers to unknown label: {tree.children[1]}')
-        if tree.children[2] not in self._labels:
+        if tree.children[2] not in self.labels:
             self._errors.append(f'if else refers to unknown label: {tree.children[2]}')
 
     def goto(self, tree):
-        if tree.children[0] not in self._labels:
+        if tree.children[0] not in self.labels:
             self._errors.append(f'goto refers to unknown label: {tree.children[0]}')
 
     def end(self, tree):
@@ -233,6 +232,7 @@ class VertexInterpreter(Interpreter):
 class IGEvaluator:
     _node: PortedNode
     _actions: Dict[str, AbstractInstruction]
+    _errors: List[str]
 
     def __init__(self,
                  node: PortedNode,
@@ -254,31 +254,37 @@ class IGEvaluator:
         self._parser = Lark(IGGrammar, start='program')
 
         self._actions = self.load_actions(modules)
+        self._errors = []
 
         self._ast = None
 
     @staticmethod
     def load_actions(modules) -> Dict[str, AbstractInstruction]:
         actions: Dict[str, AbstractInstruction] = {}
+
         for module in modules:
-            for name, obj in inspect.getmembers(sys.modules[module]):
-                if inspect.is_class(obj) and issubclass(obj, AbstractInstruction):
+            for name, obj in inspect.getmembers(module):
+                if inspect.isclass(obj) and issubclass(obj, AbstractInstruction):
                     actions[obj.__name__] = obj
         print(f"Loaded operations for {','.join(c.__name__ for c in actions.values())}")
 
         return actions
+
+    def error(self, err: str):
+        self.feedback(err)
+        self._errors.append(err)
 
     def parse(self):
         self.feedback("Parsing instruction graph")
         try:
             self._ast = self._parser.parse(self._instructions)
         except Exception as e:
-            self.feedback(f'Parsing instruction graph failed: {e}')
+            self.error(f'Parsing instruction graph failed: {e}')
             traceback.print_exc()
             return False
 
         self.feedback("Validating instructions")
-        rep_data = TransformData(node=self._node)
+        rep_data = TransformData(node=self._node, operations=self._actions)
         self._ast = rep_data.transform(self._ast)
 
         # Collect all the valid labels and check for duplicates
@@ -286,17 +292,19 @@ class IGEvaluator:
         labels = set(raw_labels)
         duplicates = set([x for x in raw_labels if raw_labels.count(x) > 1])
         if len(duplicates) != 0:
-            dup_nodes = ",".join(duplicates)
-            self.feedback(
+            dup_nodes = ",".join([str(i) for i in duplicates])
+            self.error(
                 f'Instruction graph is not well formed: has duplicate labels: {dup_nodes}')
             return False
 
         # Typecheck the tree
-        typechecker = IGTypeChecker(labels, self._actions)
+        typechecker = IGTypeChecker(labels=labels, actions=self._actions)
         if not typechecker.typecheck(self._ast):
             errors = "\n  ".join(typechecker.errors())
-            self.feedback(f'The instruction graph failed to typecheck: \n  {errors}')
+            self.error(f'The instruction graph failed to typecheck: \n  {errors}')
             return False
+
+        return True
 
     def eval_instructions(self):
         vertices = {v.children[0]: v for v in self._ast.find_data('vertex')}
