@@ -1,3 +1,4 @@
+# flake8: noqa
 from typing import List, Dict
 from abc import ABC, abstractmethod
 import attr

@@ -1,19 +1,14 @@
-from typing import Dict
 import threading
-import os
-import sys
 import time
-import traceback
+from typing import Dict
 
 import rclpy
-from rclpy.node import Node
-from rclpy.action import ActionServer, CancelResponse, GoalResponse
-
 from ig_action_msgs.action import InstructionGraph
-from action_msgs.msg import GoalStatus
+from rclpy.action import ActionServer, CancelResponse, GoalResponse
+from rclpy.node import Node
 
-from ig_server.ig_evaluator_lark import IGEvaluator
 from ig_server.abstract_instruction import AbstractInstruction
+from ig_server.ig_evaluator_lark import IGEvaluator
 
 
 class PortedNode(Node):
@@ -60,9 +55,7 @@ class IGServer(Node):
         )
 
     def goal_callback(self, goal_request):
-        """
-        Reject a goal_request if we already have a goal executing
-        """
+        """Reject a goal_request if we already have a goal executing."""
         with self._goal_lock:
             if self._goal_handle is not None and self._goal_handle.is_active:
                 return GoalResponse.REJECT
@@ -95,14 +88,17 @@ class IGServer(Node):
         instructions = goal_handle.order
 
         if self._canceled is not None and not self._canceled.is_canceled():
-            self.get_logger().info("Received a set of instructions without canceling the previous one")
+            self.get_logger().info(
+                "Received a set of instructions without canceling the previous one")
             return
 
         self._success = True
         self._canceled = CancelTracker()
         self.publish_feedback(f'BRASS | IG | Received a new goal: {instructions}')
 
-        evaluator: IGEvaluator = IGEvaluator(instructions, self._canceled.is_canceled(), self.publish_feedback(), ['ig_server.common', 'ig_server.sei'])
+        evaluator: IGEvaluator = IGEvaluator(instructions, self._canceled.is_canceled(),
+                                             self.publish_feedback(),
+                                             ['ig_server.common', 'ig_server.sei'])
         self._success = evaluator.check_valid()
         if self._success and not self._canceled.is_canceled():
             self.publish_feedback(f'Received a new valid IG: {instructions}')

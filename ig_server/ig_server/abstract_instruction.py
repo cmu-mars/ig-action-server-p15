@@ -1,7 +1,7 @@
-from typing import List, Dict
 from abc import ABC, abstractmethod
+from typing import List
+
 import attr
-from rclpy.node import Node
 
 from ig_server.ig_server import PortedNode
 

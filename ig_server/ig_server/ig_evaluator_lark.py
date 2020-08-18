@@ -1,9 +1,11 @@
-from typing import Set, Dict, List
-import attr
-import sys, inspect
+import inspect
+import sys
 import traceback
+from typing import Dict, List
 
-from lark import Lark, Transformer, v_args, Visitor, Interpreter
+import attr
+from lark import Lark, Transformer, v_args, Visitor, Interpreter, Tree
+
 from ig_server.abstract_instruction import AbstractInstruction, AbstractCondition
 from ig_server.ig_server import PortedNode
 
@@ -17,9 +19,9 @@ IGGrammar = IGGrammar = '''
            | "if" action "then" label "else" label -> if_
            | "goto" label -> goto
            | "end" -> end
-    action: NAME params 
+    action: NAME params
     params: "(" [param ("," param)*] ")"
-    ?param: string 
+    ?param: string
          | number
     string: ESCAPED_STRING
     number: SIGNED_NUMBER
@@ -36,7 +38,6 @@ IGGrammar = IGGrammar = '''
 
 @attr.s(slots=True)
 class IGTypeChecker(Visitor):
-
     actions: Dict[str, AbstractInstruction] = attr.ib()
     conditions: Dict[str, AbstractCondition] = attr.ib()
     labels: List[int] = attr.ib()
@@ -85,11 +86,13 @@ class TransformData(Transformer):
     @v_args(inline=True)
     def action(self, name: str, params: List[any]) -> AbstractInstruction:
         """
-        Replaces the action node in the AST to an AbstractInstruction that matches the name
+        Replace the action node in the AST to an AbstractInstruction that matches the name.
+
         :param name: the name of the action in the instruction graph
         :param params: the parameters (which have been transformed into a list by this)
         :return: the AbstractInstruction that can be called to construct this
-        :raises: Exception if the operation is not in self.operations or the parameters are of the wrong number or type
+        :raises: Exception if the operation is not in self.operations or the parameters are of the
+                 wrong number or type
         """
         if name not in self.operations:
             raise Exception(f'No operation "{name}"')
@@ -99,7 +102,8 @@ class TransformData(Transformer):
     @v_args(inline=True)
     def string(self, s) -> str:
         """
-        Replaces the string node in the AST with a string value
+        Replace the string node in the AST with a string value.
+
         :param s: The string node
         :return: the str representation
         """
@@ -111,7 +115,8 @@ class TransformData(Transformer):
     @v_args(inline=True)
     def number(self, n):
         """
-        Replaces the number in the AST with the float or int representation
+        Replace the number in the AST with the float or int representation.
+
         :param n: The number
         :return:
         """
@@ -119,9 +124,8 @@ class TransformData(Transformer):
 
 
 class VertexState:
-    """
-    The state of execution of a vertex kept as the IG executes recording the result
-    """
+    """The state of execution of a vertex kept as the IG executes recording the result."""
+
     result: bool = False
     vertex = None
 
@@ -131,22 +135,15 @@ class VertexState:
 
 
 class VertexInterpreter(Interpreter):
-    """
-    Interprets the instruction graph
-    """
+    """Interprets the instruction graph."""
+
     _next_vertex = None
     _current_vertex = None
     _execution_state: List[VertexState] = []
     _success: bool = True
 
-    def __init__(self, vertices,
+    def __init__(self, vertices: Dict[str, Tree],
                  check_canceled=None, feedback=None):
-        """
-        :param vertices: A dictionary of vertex labels to vertices
-        :param check_canceled: Called to check if execution is canceled
-        :param feedback: Called to provide execution feedback
-        """
-
         self._vertices = vertices
 
         def default_feedback(msg: str):
@@ -222,12 +219,16 @@ class VertexInterpreter(Interpreter):
         self.visit_children(tree)
 
     def do_action(self, action: AbstractInstruction) -> bool:
-        self.feedback(f'{self._current_vertex.children[0]}:{action.to_pretty_string(): START}')
+        label = self._current_vertex.children[0]
+        str_rep = action.to_pretty_string()
+        self.feedback(f'{label}:{str_rep : START}')
         result = action.execute()
-        self.feedback(f'{self._current_vertex.children[0]}:{action.to_pretty_string(): {"SUCCESS" if result else "FAILED"}}')
+        self.feedback(
+            f'{label}:{str_rep : {"SUCCESS" if result else "FAILED"}}')
 
     def do_condition(self, action: AbstractInstruction):
         return action.execute()
+
 
 class IGEvaluator:
     _node: PortedNode
@@ -285,7 +286,9 @@ class IGEvaluator:
         labels = set(raw_labels)
         duplicates = set([x for x in raw_labels if raw_labels.count(x) > 1])
         if len(duplicates) != 0:
-            self.feedback(f'Instruction graph is not well formed: has duplicate labels: {",".join(duplicates)}')
+            dup_nodes = ",".join(duplicates)
+            self.feedback(
+                f'Instruction graph is not well formed: has duplicate labels: {dup_nodes}')
             return False
 
         # Typecheck the tree
@@ -308,5 +311,7 @@ class IGEvaluator:
 
 
 if __name__ == '__main__':
-    eval = IGEvaluator(None, "P(V(0, do MoveAbs(10, 10, 0.5) then 1), V(1, do DispenseMedicine() then 2)::V(2, end)::nil)")
+    eval = IGEvaluator(None,
+                       "P(V(0, do MoveAbs(10, 10, 0.5) then 1), "
+                       "V(1, do DispenseMedicine() then 2)::V(2, end)::nil)")
     eval.parse()

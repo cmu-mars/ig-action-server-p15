@@ -1,20 +1,16 @@
 import math
 import threading
-import thread
 from typing import List
 
 import attr
 import numpy
-import time
-
 import rclpy
-from rclpy.node import Node
-from rclpy.action import ActionClient
 from geometry_msgs.msg import PoseWithCovarianceStamped
-
 from nav2_msgs.action import NavigateToPose
+from rclpy.action import ActionClient
+from rclpy.node import Node
 
-from ig_server.abstract_instruction import AbstractInstruction, check_args
+from ig_server.abstract_instruction import AbstractInstruction
 from ig_server.ig_server import PortedNode
 
 #################################################################################
@@ -40,7 +36,7 @@ def quaternion_from_euler(ai, aj, ak, axes='sxyz'):
     try:
         firstaxis, parity, repetition, frame = _AXES2TUPLE[axes.lower()]
     except (AttributeError, KeyError) as e:
-        _ = _TUPLE2AXES[axes]
+        axes = _TUPLE2AXES[axes]
         firstaxis, parity, repetition, frame = axes
     i = firstaxis
     j = _NEXT_AXIS[i + parity]
@@ -102,10 +98,11 @@ class Locate(AbstractInstruction):
 
     def __attrs_post_init__(self):
         if "initialpose" not in self.node.ports:
-            self.node.ports['initialpose'] = rclpy.create_publisher(PoseWithCovarianceStamped, 'initialpose', 10, latch=True)
+            self.node.ports['initialpose'] = rclpy.create_publisher(PoseWithCovarianceStamped,
+                                                                    'initialpose', 10, latch=True)
 
     def execute(self):
-        initial_pose = PosWithCovarianceStamped()
+        initial_pose = PoseWithCovarianceStamped()
         initial_pose.header.stamp = rclpy.Time.now()
         initial_pose.header.frame_id = 'map'
 
@@ -117,8 +114,10 @@ class Locate(AbstractInstruction):
         initial_pose.pose.pose.orientation.y = q[1]
         initial_pose.pose.pose.orientation.z = q[2]
         initial_pose.pose.pose.orientation.w = q[3]
-        initial_pose.pose.covariance = [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        initial_pose.pose.covariance = [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0,
                                         0.0, 0.0, 0.0, 0.0, 0.06853891945200942]
 
         self.node.ports['initialpose'].publish(initial_pose)
@@ -133,7 +132,6 @@ class Locate(AbstractInstruction):
 
 @attr.s(slots=True)
 class Move(AbstractInstruction):
-
     x: float = attr.ib()
     y: float = attr.ib()
     velocity: float = attr.ib()
@@ -166,7 +164,8 @@ class Move(AbstractInstruction):
         self._cancel_block = None
 
         if "nav2_actions" in self.node.ports.keys():
-            self.node.ports['nav2_pose'] = ActionClient(self.node, NavigateToPose, "/NavigateToPose")
+            self.node.ports['nav2_pose'] = ActionClient(self.node, NavigateToPose,
+                                                        "/NavigateToPose")
 
     def create_goal(self):
         if self.action == 'Absolute':
@@ -194,7 +193,7 @@ class Move(AbstractInstruction):
         self._result_block = threading.Event()
 
         gh = self.node.ports['nav2_pose'].send_goal_async(self.goal)
-        sgf = gh.add_done_callback(self._goal_response_callback)
+        gh.add_done_callback(self._goal_response_callback)
 
         self._result_block.wait()
         self._result_block = None
@@ -232,7 +231,8 @@ class Move(AbstractInstruction):
         self._cancel_block.set()
 
     def to_pretty_string(self):
-        return f"Move({self._x}, {self._y}, {self._velocity}, {self._action}{f', {self._w}' if self._w != 0 else ''})"
+        return f"Move({self._x}, {self._y}, {self._velocity}, {self._action}" \
+               f"{f', {self._w}' if self._w != 0 else ''})"
 
 
 class MoveAbs(Move):
@@ -251,9 +251,9 @@ class MoveAbs(Move):
     def to_pretty_string(self):
         return f"MoveAbs({self._args[0]}, {self._args[1]}, {self._args[2]})"
 
+
 @attr.s(slots=True)
 class Stop(AbstractInstruction):
-
     distance: float = attr.ib()
     object_: str = attr.ib()
 
