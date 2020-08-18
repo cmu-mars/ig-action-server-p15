@@ -1,3 +1,0 @@
-<launch>
-  <node name="ig_interpreter" pkg="ig_action_server" type="ig_server.py" output="screen"></node>
-</launch>

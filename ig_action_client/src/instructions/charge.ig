@@ -1,1 +1,0 @@
-P(V(1, do Charge(30) then 2), V(2, end)::nil)
