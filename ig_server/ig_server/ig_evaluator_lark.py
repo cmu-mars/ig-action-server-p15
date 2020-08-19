@@ -5,9 +5,12 @@ from typing import Dict, List
 import attr
 from lark import Transformer, v_args, Visitor, Tree, Lark
 from lark.visitors import Interpreter
+from lark.exceptions import VisitError
 
+from ig_server.exceptions import IGException
 from ig_server.abstract_instruction import AbstractInstruction
 from ig_server.ros_wrappers import PortedNode
+
 
 IGGrammar = IGGrammar = '''
     program: "P" "(" vertex "," vertices ")"
@@ -94,7 +97,7 @@ class TransformData(Transformer):
                  wrong number or type
         """
         if name not in self.operations:
-            raise Exception(f'No operation "{name}"')
+            raise IGException(f'No operation "{name}"')
         cls = self.operations[name]
         return cls.load_from_params(self.node, params)
 
@@ -274,6 +277,9 @@ class IGEvaluator:
         self.feedback(err)
         self._errors.append(err)
 
+    def errors(self):
+        return self._errors
+
     def parse(self):
         self.feedback("Parsing instruction graph")
         try:
@@ -285,7 +291,14 @@ class IGEvaluator:
 
         self.feedback("Validating instructions")
         rep_data = TransformData(node=self._node, operations=self._actions)
-        self._ast = rep_data.transform(self._ast)
+        try:
+            self._ast = rep_data.transform(self._ast)
+        except IGException as e:
+            self.error(str(e))
+            return False
+        except VisitError as ve:
+            self.error(str(ve))
+            return False
 
         # Collect all the valid labels and check for duplicates
         raw_labels = [v.children[0] for v in self._ast.find_data('vertex')]

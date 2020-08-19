@@ -11,6 +11,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 
 from ig_server.abstract_instruction import AbstractInstruction
+from ig_server.exceptions import IGException
 from ig_server.ros_wrappers import PortedNode
 
 #################################################################################
@@ -89,12 +90,7 @@ class Locate(AbstractInstruction):
 
     @classmethod
     def load_from_params(cls, node: PortedNode, params: List[any]):
-        if len(params) < 3:
-            raise Exception(f'Locate found {len(params)} parameters, expecting 3')
-        x = float(params[0])
-        y = float(params[1])
-        w = float(params[2])
-
+        x, y, w = cls.convert_params(params, (float, float, float))
         return Locate(node=node, x=x, y=y, w=w)
 
     def execute(self):
@@ -146,13 +142,14 @@ class Move(AbstractInstruction):
 
     @classmethod
     def load_from_params(cls, node: PortedNode, params: List[any]):
-        if len(params) < 4 or len(params) > 5:
-            raise Exception(f'Move: found {len(params)} parameters, expecting 4 or 5')
-        x = float(params[0])
-        y = float(params[1])
-        v = float(params[2])
-        a = str(params[3])
-        w = float(params[4]) if len(params) == 5 else 0.0
+        if len(params) == 4:
+            x, y, v, a = cls.convert_params(params, (float, float, float, str))
+            w = 0.0
+        elif len(params) == 5:
+            x, y, v, a, w = cls.convert_params(params, (float, float, float, str, float))
+        else:
+            raise IGException(f'Move: found {len(params)} parameters, expecting 4 or 5')
+
         return Move(node=node,
                     x=x, y=y, velocity=v, action=a, yaw=w)
 
@@ -240,12 +237,7 @@ class MoveAbs(Move):
 
     @classmethod
     def load_from_params(cls, node: PortedNode, params: List[any]):
-        if len(params) != 3:
-            raise Exception(f'MoveAbs received {len(params)} parameters, expected 3')
-
-        x = float(params[0])
-        y = float(params[1])
-        v = float(params[2])
+        x, y, v = cls.convert_params(params, (float, float, float))
 
         return Move(x=x, y=y, velocity=v, node=Node, action="Absolute", yaw=0)
 
@@ -260,11 +252,7 @@ class Stop(AbstractInstruction):
 
     @classmethod
     def load_from_params(cls, node: PortedNode, params: List[any]):
-        if len(params) != 2:
-            raise Exception(f"Stop received {len(params)} parameters, expected 2")
-        distance = float(params[0])
-        object_ = str(params[1])
-
+        distance, object_ = cls.convert_params(params, (float, str))
         return Stop(node=node, distance=distance, object_=object_)
 
     def execute(self):
@@ -289,9 +277,7 @@ class Visible(AbstractInstruction):
 
     @classmethod
     def load_from_params(cls, node: PortedNode, params: List[any]):
-        if len(params) != 1:
-            raise Exception(f'Visible received {len(params)} parameters, expecting 1')
-        o = str(params[0])
+        o = cls.convert_params(params, [str])
         return Visible(node=node, object_=o)
 
     def execute(self):
