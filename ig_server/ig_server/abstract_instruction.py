@@ -42,7 +42,7 @@ class AbstractInstruction(ABC):
         pass
 
     @abstractmethod
-    def execute(self):
+    def execute(self) -> bool:
         pass
 
     @abstractmethod
@@ -50,10 +50,10 @@ class AbstractInstruction(ABC):
         pass
 
     @abstractmethod
-    def to_pretty_string(self):
+    def to_pretty_string(self) -> str:
         pass
 
-    def active(self):
+    def active(self) -> bool:
         return self._is_active
 
     def activate(self):

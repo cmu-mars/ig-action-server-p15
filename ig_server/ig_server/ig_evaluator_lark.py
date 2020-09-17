@@ -144,9 +144,10 @@ class VertexInterpreter(Interpreter):
     _execution_state: List[VertexState] = []
     _success: bool = True
 
-    def __init__(self, vertices: Dict[str, Tree],
+    def __init__(self, node, vertices: Dict[int, Tree],
                  check_canceled=None, feedback=None):
         self._vertices = vertices
+        self._node = node
 
         def default_feedback(msg: str):
             print(msg)
@@ -167,19 +168,26 @@ class VertexInterpreter(Interpreter):
         self._execution_state.append(VertexState(self._current_vertex, result))
 
     def _update_next_vertex(self, label: int):
+        # for key in self._vertices:
+        #     self.feedback(f"self._vertices[{type(key)}({key})] = {str(self._vertices[key])}")
         if label is None or label == -1:
             self._next_vertex = None
         else:
             self._next_vertex = self._vertices[label]
+        # self.feedback(f"Next vertex is {label}: {self._next_vertex}")
 
-    @v_args(inline=True)
-    def dothen(self, action: AbstractInstruction, label: int):
+    # @v_args(inline=True)
+    # def dothen(self, action: AbstractInstruction, label):
+    def dothen(self, tree):
+        action = tree.children[0]
+        label = tree.children[1]
         result = self.do_action(action)
         self._update_state(result)
         if result:
             self._update_next_vertex(label)
         else:
             self._update_next_vertex(-1)
+            self._success = False
 
     @v_args(inline=True)
     def dountil(self, action, cnd, label):
@@ -223,10 +231,11 @@ class VertexInterpreter(Interpreter):
     def do_action(self, action: AbstractInstruction) -> bool:
         label = self._current_vertex.children[0]
         str_rep = action.to_pretty_string()
-        self.feedback(f'{label}:{str_rep : START}')
+        self.feedback(f'{label}:{str_rep} : START')
         result = action.execute()
         self.feedback(
-            f'{label}:{str_rep : {"SUCCESS" if result else "FAILED"}}')
+            f'{label}:{str_rep} : {"SUCCESS" if result else "FAILED"}')
+        return result
 
     def do_condition(self, action: AbstractInstruction):
         return action.execute()
@@ -320,15 +329,22 @@ class IGEvaluator:
         return True
 
     def eval_instructions(self):
-        vertices = {v.children[0]: v for v in self._ast.find_data('vertex')}
-        interpreter = VertexInterpreter(self._node, vertices)
-        current_vertex = self._ast.children[0]
-        while current_vertex is not None and not self.check_canceled():
-            interpreter.visit(current_vertex)
-            current_vertex = interpreter.next_vertex()
+        try:
+            vertices = {v.children[0]: v for v in self._ast.find_data('vertex')}
+            interpreter = VertexInterpreter(self._node, vertices, feedback=self.feedback,
+                                            check_canceled=self.check_canceled)
+            current_vertex = self._ast.children[0]
+            while current_vertex is not None and not self.check_canceled():
+                interpreter.visit(current_vertex)
+                current_vertex = interpreter.next_vertex()
 
-        if self.check_canceled:
-            self.feedback("Instruction evaluation canceled")
+            if self.check_canceled():
+                self.feedback("Instruction evaluation canceled")
+            return interpreter.success()
+        except Exception as e:
+            self.feedback(f"Exception {traceback.format_exc()}")
+            # traceback.print_exc()
+            return False
 
 
 if __name__ == '__main__':
